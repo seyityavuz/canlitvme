@@ -1,47 +1,69 @@
-name: Update Playlist
+import requests
+from bs4 import BeautifulSoup
+import re
+import logging
+from time import sleep
 
-on:
-  schedule:
-    - cron: '0 */2 * * *'  # Her 2 saatte bir çalışır
-  workflow_dispatch:        # Manuel tetikleme desteği
+BASE_URL = "https://www.canlitv.me"
+LIVE_URL = f"{BASE_URL}/live"
+HEADERS = {"User-Agent": "Mozilla/5.0"}
 
-jobs:
-  update:
-    runs-on: ubuntu-latest
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+def get_channel_links():
+    try:
+        r = requests.get(LIVE_URL, headers=HEADERS, timeout=10)
+        r.raise_for_status()
+        soup = BeautifulSoup(r.text, "html.parser")
+        links = [BASE_URL + a["href"] for a in soup.select("a[href^='/live/']")]
+        logging.info(f"{len(links)} kanal bulundu.")
+        return links
+    except Exception as e:
+        logging.error(f"Kanal listesi alınamadı: {e}")
+        return []
 
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
+def extract_m3u8_from_iframe(iframe_url):
+    try:
+        r = requests.get(iframe_url, headers=HEADERS, timeout=10)
+        r.raise_for_status()
+        match = re.search(r'(https?://[^"\']+\.m3u8)', r.text)
+        return match.group(1) if match else None
+    except Exception as e:
+        logging.warning(f"iframe okunamadı: {iframe_url} → {e}")
+        return None
 
-      - name: Install dependencies
-        run: pip install requests beautifulsoup4
+def extract_m3u8_from_channel(channel_url):
+    try:
+        r = requests.get(channel_url, headers=HEADERS, timeout=10)
+        r.raise_for_status()
+        soup = BeautifulSoup(r.text, "html.parser")
+        iframe = soup.find("iframe")
+        if iframe and "src" in iframe.attrs:
+            return extract_m3u8_from_iframe(iframe["src"])
+    except Exception as e:
+        logging.warning(f"Kanal sayfası okunamadı: {channel_url} → {e}")
+    return None
 
-      - name: Run scraper
-        run: python scraper.py
+def build_playlist():
+    links = get_channel_links()
+    if not links:
+        logging.error("Hiçbir kanal bağlantısı alınamadı. Dosya oluşturulmadı.")
+        return
 
-      - name: Commit and push changes
-        env:
-          PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
-        run: |
-          git config --global user.name "seyityavuz"
-          git config --global user.email "youremail@example.com"
-          git remote set-url origin https://x-access-token:${PAT_TOKEN}@github.com/${{ github.repository }}
+    with open("playlist.m3u8", "w", encoding="utf-8") as f:
+        f.write("#EXTM3U\n")
+        success_count = 0
+        for link in links:
+            name = link.split("/")[-1].split("-")[0].upper()
+            m3u8 = extract_m3u8_from_channel(link)
+            if m3u8:
+                f.write(f"#EXTINF:-1,{name}\n{m3u8}\n")
+                success_count += 1
+            else:
+                logging.info(f"{name} için m3u8 bulunamadı.")
+            sleep(0.5)  # sunucuyu yormamak için küçük gecikme
 
-          if [[ -f "playlist.m3u8" ]]; then
-            git add playlist.m3u8
-            if ! git diff --cached --quiet; then
-              git commit -m "Auto-update playlist"
-              git push origin HEAD:main
-              echo "✅ Playlist güncellendi ve push edildi."
-            else
-              echo "ℹ️ Değişiklik yok, commit atlanıyor."
-            fi
-          else
-            echo "⚠️ playlist.m3u8 dosyası bulunamadı, işlem iptal edildi."
-            exit 1
-          fi
+    logging.info(f"Toplam {success_count} yayın playlist'e eklendi.")
+
+if __name__ == "__main__":
+    build_playlist()
