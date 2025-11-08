@@ -4,7 +4,7 @@ import re
 import logging
 from time import sleep
 
-BASE_URL = "https://cdn900.canlitv.me/sabantv.m3u8{i}"
+BASE_URL = "https://cdn900.canlitv.me/sabantv.m3u8?tkn=nb_yJgKgr3KkyX8jegf53w&tms=1762653044&hst=www.canlitv.me&ip=95.65.213.102&utkn{i}"
 LIVE_URL = f"{BASE_URL}/live"
 HEADERS = {"User-Agent": "Mozilla/5.0"}
 
