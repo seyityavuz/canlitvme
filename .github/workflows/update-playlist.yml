@@ -32,4 +32,4 @@ jobs:
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}
           git add playlist.m3u8
           git diff --cached --quiet || git commit -m "Auto-update playlist"
-          git push
+          git push origin HEAD:main
