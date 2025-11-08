@@ -3,19 +3,31 @@ from bs4 import BeautifulSoup
 import re
 import logging
 from time import sleep
+from urllib.parse import urlencode
 
-BASE_URL = "https://cdn900.canlitv.me/sabantv.m3u8?tkn=nb_yJgKgr3KkyX8jegf53w&tms=1762653044&hst=www.canlitv.me&ip=95.65.213.102&utkn{i}"
-LIVE_URL = f"{BASE_URL}/live"
 HEADERS = {"User-Agent": "Mozilla/5.0"}
-
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+
+# Token parametrelerini buradan güncelleyebilirsin
+TOKEN_PARAMS = {
+    "tkn": "nb_yJgKgr3KkyX8jegf53w",
+    "tms": "1762653044",
+    "hst": "www.canlitv.me",
+    "ip": "95.65.213.102",
+    "utkn": "263e5444527874747bea7e3e1c4c2fcd"
+}
+
+def build_base_url():
+    query_string = urlencode(TOKEN_PARAMS)
+    return f"https://cdn900.canlitv.me/sabantv.m3u8?{query_string}"
 
 def get_channel_links():
     try:
-        r = requests.get(LIVE_URL, headers=HEADERS, timeout=10)
+        live_page = "https://www.canlitv.me/sabantv"  # örnek sayfa, gerekirse değiştir
+        r = requests.get(live_page, headers=HEADERS, timeout=10)
         r.raise_for_status()
         soup = BeautifulSoup(r.text, "html.parser")
-        links = [BASE_URL + a["href"] for a in soup.select("a[href^='/live/']")]
+        links = ["https://www.canlitv.me" + a["href"] for a in soup.select("a[href^='/canli/']")]
         logging.info(f"{len(links)} kanal bulundu.")
         return links
     except Exception as e:
@@ -26,7 +38,7 @@ def extract_m3u8_from_iframe(iframe_url):
     try:
         r = requests.get(iframe_url, headers=HEADERS, timeout=10)
         r.raise_for_status()
-        match = re.search(r'(https?://[^"\']+\.m3u8)', r.text)
+        match = re.search(r'(https?://[^"\']+\.m3u8[^"\']*)', r.text)
         return match.group(1) if match else None
     except Exception as e:
         logging.warning(f"iframe okunamadı: {iframe_url} → {e}")
@@ -61,7 +73,7 @@ def build_playlist():
                 success_count += 1
             else:
                 logging.info(f"{name} için m3u8 bulunamadı.")
-            sleep(0.5)  # sunucuyu yormamak için küçük gecikme
+            sleep(0.5)
 
     logging.info(f"Toplam {success_count} yayın playlist'e eklendi.")
 
