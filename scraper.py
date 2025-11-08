@@ -5,10 +5,7 @@ import logging
 from time import sleep
 from urllib.parse import urlencode
 
-HEADERS = {"User-Agent": "Mozilla/5.0"}
-logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-
-# Token parametrelerini buradan güncelleyebilirsin
+# 🔐 Token parametreleri (güncel token buraya yazılır)
 TOKEN_PARAMS = {
     "tkn": "nb_yJgKgr3KkyX8jegf53w",
     "tms": "1762653044",
@@ -17,14 +14,17 @@ TOKEN_PARAMS = {
     "utkn": "263e5444527874747bea7e3e1c4c2fcd"
 }
 
-def build_base_url():
-    query_string = urlencode(TOKEN_PARAMS)
-    return f"https://cdn900.canlitv.me/sabantv.m3u8?{query_string}"
+HEADERS = {"User-Agent": "Mozilla/5.0"}
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+
+def build_token_url():
+    query = urlencode(TOKEN_PARAMS)
+    return f"https://cdn900.canlitv.me/sabantv.m3u8?{query}"
 
 def get_channel_links():
     try:
-        live_page = "https://www.canlitv.me/sabantv"  # örnek sayfa, gerekirse değiştir
-        r = requests.get(live_page, headers=HEADERS, timeout=10)
+        # Örnek sayfa: sabantv üzerinden diğer canlı kanallara ulaşılabiliyorsa
+        r = requests.get("https://www.canlitv.me/sabantv", headers=HEADERS, timeout=10)
         r.raise_for_status()
         soup = BeautifulSoup(r.text, "html.parser")
         links = ["https://www.canlitv.me" + a["href"] for a in soup.select("a[href^='/canli/']")]
