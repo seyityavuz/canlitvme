@@ -3,7 +3,7 @@ name: Update Playlist
 on:
   schedule:
     - cron: '0 */2 * * *'  # Her 2 saatte bir çalışır
-  workflow_dispatch:        # Manuel tetikleme desteği
+  workflow_dispatch:
 
 jobs:
   update:
@@ -26,7 +26,7 @@ jobs:
 
       - name: Commit and push changes
         env:
-          PAT_TOKEN: ${{ secrets.PAT_TOKEN }}  # Kendi oluşturduğun PAT burada kullanılacak
+          PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
           git config --global user.name "seyityavuz"
           git config --global user.email "youremail@example.com"
