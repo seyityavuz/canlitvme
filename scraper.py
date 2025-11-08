@@ -8,10 +8,10 @@ from urllib.parse import urlencode
 # 🔐 Token parametreleri (güncel token buraya yazılır)
 TOKEN_PARAMS = {
     "tkn": "nb_yJgKgr3KkyX8jegf53w",
-    "tms": "1762653044",
+    "tms": "{i}",
     "hst": "www.canlitv.me",
     "ip": "95.65.213.102",
-    "utkn": "263e5444527874747bea7e3e1c4c2fcd"
+    "utkn": "{i}"
 }
 
 HEADERS = {"User-Agent": "Mozilla/5.0"}
